@@ -51,6 +51,31 @@
     }
 
     .library-section { width: 100%; max-width: 800px; }
+    
+    /* ★ 新增的分頁按鈕樣式 ★ */
+    .tab-container {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    .tab-btn {
+      background-color: #2c2c2e;
+      color: #a2a2a7;
+      border: 2px solid transparent;
+      padding: 10px 25px;
+      border-radius: 25px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .tab-btn:hover { background-color: #3a3a3c; }
+    .tab-btn.active {
+      background-color: #34c759;
+      color: #000;
+    }
+
     .region-title {
       color: #ffcc00; font-size: 20px; font-weight: bold;
       margin: 25px 0 15px 0; padding-bottom: 5px; border-bottom: 1px solid #3a3a3c;
@@ -70,10 +95,8 @@
 </head>
 <body>
 
-  <!-- 共用提示框 -->
   <div id="toast">✅ 已成功複製！</div>
 
-  <!-- 原本的轉換功能 -->
   <div class="converter-section">
     <h2>📍 座標一鍵轉換</h2>
     <textarea id="coordInput" placeholder="請在此貼上座標&#10;例如：北43.26132° 東141.96267°"></textarea>
@@ -83,23 +106,28 @@
     </div>
   </div>
 
-  <!-- 新增的內建座標庫功能 -->
   <div class="library-section">
     <h2>📋 內建座標快速複製庫</h2>
     
-    <!-- ★ 這裡是你新增的顯示次數區塊 ★ -->
     <div style="text-align: center; margin-bottom: 20px;">
       <p style="color: #a2a2a7; font-size: 16px;">
         🌍 全球玩家已複製座標：<span id="globalCount" style="color: #34c759; font-weight: bold; font-size: 20px;">載入中...</span> 次
       </p>
     </div>
 
+    <!-- ★ 分頁按鈕區塊 ★ -->
+    <div class="tab-container">
+      <button class="tab-btn active" id="btn-japan" onclick="switchTab('japan')">🇯🇵 日本座標</button>
+      <button class="tab-btn" id="btn-korea" onclick="switchTab('korea')">🇰🇷 韓國座標</button>
+    </div>
+
+    <!-- 顯示座標的容器 -->
     <div id="coordLibrary"></div>
   </div>
 
   <script>
-    // --- ★ 全域計數器 API 邏輯 ★ ---
-    const counterNamespace = "my_pokemon_radar_website_2026_0503"; // 稍微加點日期避免跟別人撞名
+    // --- 全域計數器 API 邏輯 ---
+    const counterNamespace = "my_pokemon_radar_website_2026_0503"; 
     const counterKey = "copy_clicks";
 
     function loadGlobalCount() {
@@ -148,25 +176,24 @@
         toast.innerText = customMessage || `✅ 已複製：${text}`;
         toast.style.display = "block";
         setTimeout(() => { toast.style.display = "none"; }, 2500);
-
-        // ★ 核心關鍵：每次成功複製後，呼叫計數器 +1
         addGlobalClick();
-
       }).catch(err => {
         console.error('複製失敗', err);
       });
     }
 
-    // --- 內建座標庫邏輯 ---
-    const rawData = `座標：
-韓國 (6)
+    // --- ★ 座標資料庫（拆分為日本和韓國） ★ ---
+    const dataKorea = `
+2026-5/1至2026-5/31 
 首爾 (6)
 37.5409, 127.0550
 37.5420, 127.0529
 37.5441, 127.0544
 37.5450, 127.0524
 37.5445, 127.0373
-37.5452, 127.0373
+37.5452, 127.0373`;
+
+    const dataJapan = `
 北海道・東北 (163)
 北海道 (50)
 42.635755, 141.610090
@@ -658,8 +685,18 @@
 26.220050, 127.716570
 26.691694, 127.877972`;
 
-    function renderLibrary() {
+    // --- 渲染畫面與切換邏輯 ---
+    function renderLibrary(region) {
       const container = document.getElementById('coordLibrary');
+      container.innerHTML = ''; // 清空目前的內容
+      
+      // 更新按鈕的視覺狀態
+      document.getElementById('btn-japan').classList.remove('active');
+      document.getElementById('btn-korea').classList.remove('active');
+      document.getElementById(`btn-${region}`).classList.add('active');
+
+      // 決定要渲染哪個資料
+      const rawData = region === 'japan' ? dataJapan : dataKorea;
       const lines = rawData.split('\n').map(line => line.trim()).filter(line => line.length > 0);
       
       let currentGrid = null;
@@ -680,9 +717,9 @@
           currentGrid = null; 
           
           const title = document.createElement('div');
-          if (line === '座標：') return;
 
-          if (line.includes('・') || line.includes('關東') || line.includes('中部') || line.includes('近畿') || line.includes('中國') || line.includes('九州') || line.includes('韓國')) {
+          // 判斷是否為大標題
+          if (line.includes('・') || line.includes('關東') || line.includes('中部') || line.includes('近畿') || line.includes('中國') || line.includes('九州') || line.includes('首爾')) {
             title.className = 'region-title';
           } else {
             title.className = 'sub-region-title';
@@ -693,9 +730,14 @@
       });
     }
 
-    // ★ 網頁載入後，同時執行「渲染畫面」與「抓取計數器數字」 ★
+    // 給按鈕呼叫的切換函式
+    function switchTab(region) {
+      renderLibrary(region);
+    }
+
+    // 網頁載入後，預設顯示日本，並抓取計數器數字
     window.onload = () => {
-      renderLibrary();
+      renderLibrary('japan');
       loadGlobalCount();
     };
 
