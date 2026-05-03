@@ -159,6 +159,14 @@
 
     // --- 內建座標庫邏輯 ---
     const rawData = `座標：
+韓國 (6)
+首爾 (6)
+37.5409, 127.0550
+37.5420, 127.0529
+37.5441, 127.0544
+37.5450, 127.0524
+37.5445, 127.0373
+37.5452, 127.0373
 北海道・東北 (163)
 北海道 (50)
 42.635755, 141.610090
@@ -674,7 +682,7 @@
           const title = document.createElement('div');
           if (line === '座標：') return;
 
-          if (line.includes('・') || line.includes('關東') || line.includes('中部') || line.includes('近畿') || line.includes('中國') || line.includes('九州')) {
+          if (line.includes('・') || line.includes('關東') || line.includes('中部') || line.includes('近畿') || line.includes('中國') || line.includes('九州') || line.includes('韓國')) {
             title.className = 'region-title';
           } else {
             title.className = 'sub-region-title';
