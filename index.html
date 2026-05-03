@@ -17,7 +17,6 @@
     }
     h2 { color: #34c759; margin-bottom: 20px; text-align: center; }
     
-    /* 轉換器區塊 */
     .converter-section {
       width: 100%;
       max-width: 400px;
@@ -44,7 +43,6 @@
     .result-box { margin-top: 20px; text-align: center; height: 30px; }
     #output { font-size: 22px; font-weight: bold; color: #ffcc00; letter-spacing: 1px; }
     
-    /* 共用 Toast 提示 */
     #toast { 
       position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
       background-color: #34c759; color: #000; font-weight: bold;
@@ -52,41 +50,19 @@
       display: none; font-size: 15px; z-index: 1000;
     }
 
-    /* 座標庫區塊 */
-    .library-section {
-      width: 100%;
-      max-width: 800px;
-    }
+    .library-section { width: 100%; max-width: 800px; }
     .region-title {
-      color: #ffcc00;
-      font-size: 20px;
-      font-weight: bold;
-      margin: 25px 0 15px 0;
-      padding-bottom: 5px;
-      border-bottom: 1px solid #3a3a3c;
+      color: #ffcc00; font-size: 20px; font-weight: bold;
+      margin: 25px 0 15px 0; padding-bottom: 5px; border-bottom: 1px solid #3a3a3c;
     }
-    .sub-region-title {
-      color: #a2a2a7;
-      font-size: 16px;
-      margin: 15px 0 10px 0;
-    }
+    .sub-region-title { color: #a2a2a7; font-size: 16px; margin: 15px 0 10px 0; }
     .grid-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 10px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;
     }
     .coord-item {
-      background-color: #2c2c2e;
-      border: 1px solid #3a3a3c;
-      border-radius: 8px;
-      padding: 12px 10px;
-      text-align: center;
-      color: #f2f2f7;
-      font-size: 14px;
-      font-family: monospace;
-      cursor: pointer;
-      transition: all 0.2s;
-      user-select: none;
+      background-color: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 8px;
+      padding: 12px 10px; text-align: center; color: #f2f2f7; font-size: 14px;
+      font-family: monospace; cursor: pointer; transition: all 0.2s; user-select: none;
     }
     .coord-item:hover { background-color: #3a3a3c; border-color: #34c759; }
     .coord-item:active { transform: scale(0.95); background-color: #34c759; color: #000; }
@@ -110,10 +86,40 @@
   <!-- 新增的內建座標庫功能 -->
   <div class="library-section">
     <h2>📋 內建座標快速複製庫</h2>
+    
+    <!-- ★ 這裡是你新增的顯示次數區塊 ★ -->
+    <div style="text-align: center; margin-bottom: 20px;">
+      <p style="color: #a2a2a7; font-size: 16px;">
+        🌍 全球玩家已複製座標：<span id="globalCount" style="color: #34c759; font-weight: bold; font-size: 20px;">載入中...</span> 次
+      </p>
+    </div>
+
     <div id="coordLibrary"></div>
   </div>
 
   <script>
+    // --- ★ 全域計數器 API 邏輯 ★ ---
+    const counterNamespace = "my_pokemon_radar_website_2026_0503"; // 稍微加點日期避免跟別人撞名
+    const counterKey = "copy_clicks";
+
+    function loadGlobalCount() {
+      fetch(`https://api.counterapi.dev/v1/${counterNamespace}/${counterKey}`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('globalCount').innerText = data.count || 0;
+        })
+        .catch(err => console.error("抓取次數失敗", err));
+    }
+
+    function addGlobalClick() {
+      fetch(`https://api.counterapi.dev/v1/${counterNamespace}/${counterKey}/up`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('globalCount').innerText = data.count;
+        })
+        .catch(err => console.error("更新次數失敗", err));
+    }
+
     // --- 轉換功能邏輯 ---
     function processCoord() {
       const input = document.getElementById('coordInput').value;
@@ -142,6 +148,10 @@
         toast.innerText = customMessage || `✅ 已複製：${text}`;
         toast.style.display = "block";
         setTimeout(() => { toast.style.display = "none"; }, 2500);
+
+        // ★ 核心關鍵：每次成功複製後，呼叫計數器 +1
+        addGlobalClick();
+
       }).catch(err => {
         console.error('複製失敗', err);
       });
@@ -647,7 +657,6 @@
       let currentGrid = null;
 
       lines.forEach(line => {
-        // 如果包含逗號，代表是座標
         if (line.includes(',')) {
           if (!currentGrid) {
             currentGrid = document.createElement('div');
@@ -659,16 +668,12 @@
           item.innerText = line;
           item.onclick = () => copyToClipboard(line);
           currentGrid.appendChild(item);
-        } 
-        // 否則是標題（大區塊 或 縣市）
-        else {
-          currentGrid = null; // 遇到新標題，重置網格容器
+        } else {
+          currentGrid = null; 
           
           const title = document.createElement('div');
-          // 判斷是否為「大區塊」或「座標：」 (過濾掉純"座標："這類字眼)
           if (line === '座標：') return;
 
-          // 簡單判斷：如果有特殊符號或沒帶括號數字，通常是主標題
           if (line.includes('・') || line.includes('關東') || line.includes('中部') || line.includes('近畿') || line.includes('中國') || line.includes('九州')) {
             title.className = 'region-title';
           } else {
@@ -680,8 +685,11 @@
       });
     }
 
-    // 網頁載入後執行渲染
-    window.onload = renderLibrary;
+    // ★ 網頁載入後，同時執行「渲染畫面」與「抓取計數器數字」 ★
+    window.onload = () => {
+      renderLibrary();
+      loadGlobalCount();
+    };
 
   </script>
 </body>
